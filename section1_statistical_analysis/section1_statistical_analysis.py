@@ -178,15 +178,17 @@ else:
     i1 = None
     i2 = None
 
-# Save selected targets to a file for reference
-with open(os.path.join(RESULTS_DIR, 'target_users.txt'), 'w') as f:
-    f.write(f"{u1}\n")
-    f.write(f"{u2}\n")
-    f.write(f"{u3}\n")
+# if u want to use other random users/items, first delet the files from results folder
+if not os.path.exists(os.path.join(RESULTS_DIR, 'target_users.txt')):
+    with open(os.path.join(RESULTS_DIR, 'target_users.txt'), 'w') as f:
+        f.write(f"{u1}\n")
+        f.write(f"{u2}\n")
+        f.write(f"{u3}\n")
 
-with open(os.path.join(RESULTS_DIR, 'target_items.txt'), 'w') as f:
-    f.write(f"{i1}\n")
-    f.write(f"{i2}\n")
+if not os.path.exists(os.path.join(RESULTS_DIR, 'target_items.txt')):
+    with open(os.path.join(RESULTS_DIR, 'target_items.txt'), 'w') as f:
+        f.write(f"{i1}\n")
+        f.write(f"{i2}\n")
 
 # 13. Count the number of co-rating users and co-rated items
 # 14. Determine the threshold beta
