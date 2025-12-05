@@ -80,8 +80,8 @@ def main():
         # --------------------------------------------------------------------------------------------------------------
         # using a large sample of 40,000 to balance accuracy and speed
         #eldata kbera lazem na5od sample 
-        if len(X_scaled) > 1000:
-            score = silhouette_score(X_scaled, labels, sample_size=1000, random_state=42)
+        if len(X_scaled) > 40000:
+            score = silhouette_score(X_scaled, labels, sample_size=40000, random_state=42)
         else:
             score = silhouette_score(X_scaled, labels)
         silhouette_scores.append(score)
