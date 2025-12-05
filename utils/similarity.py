@@ -141,6 +141,7 @@ def calculate_item_mean_centered_cosine(item1_ratings, item2_ratings, user_means
 def calculate_item_pearson(item1_ratings, item2_ratings):
     """
     Calculates Pearson correlation between two items based on common users.
+    Subtracts the ITEM's average rating (computed over common users) from each rating.
     
     Args:
         item1_ratings (dict): Dictionary of {user_id: rating} for item 1.
@@ -149,8 +150,30 @@ def calculate_item_pearson(item1_ratings, item2_ratings):
     Returns:
         float: Pearson correlation.
     """
-    # Logic is identical to user-based
-    return calculate_user_pearson(item1_ratings, item2_ratings)
+    common_users = set(item1_ratings.keys()) & set(item2_ratings.keys())
+    n = len(common_users)
+    
+    if n < 2:
+        return 0.0
+        
+    # Calculate means based on common users only
+    i1_common_ratings = [item1_ratings[user] for user in common_users]
+    i2_common_ratings = [item2_ratings[user] for user in common_users]
+    
+    mean_i1 = sum(i1_common_ratings) / n
+    mean_i2 = sum(i2_common_ratings) / n
+    
+    numerator = sum((r1 - mean_i1) * (r2 - mean_i2) for r1, r2 in zip(i1_common_ratings, i2_common_ratings))
+    
+    sum_sq_i1 = sum((r - mean_i1)**2 for r in i1_common_ratings)
+    sum_sq_i2 = sum((r - mean_i2)**2 for r in i2_common_ratings)
+    
+    denominator = (sum_sq_i1)**0.5 * (sum_sq_i2)**0.5
+    
+    if denominator == 0:
+        return 0.0
+        
+    return numerator / denominator
 
 def calculate_similarity_for_target_user(target_user_ratings, all_users_ratings, similarity_func, user_means=None, target_user_id=None):
     """
