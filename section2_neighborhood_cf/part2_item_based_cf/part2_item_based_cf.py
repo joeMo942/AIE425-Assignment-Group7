@@ -373,6 +373,94 @@ def main():
             f_pred.write(row_str + "\n")
             
     print(f"Prediction comparison saved to: {pred_comp_path}")
+    
+    # -------------------------------------------------------------------------
+    # 10. Case Study 2
+    # -------------------------------------------------------------------------
+    print("\n" + "="*80)
+    print("Case Study 2: Pearson Prediction on Unrated Items")
+    print("="*80)
+    
+    # Reuse validation_set (which is already unrated items)
+    predictions_sim_case2 = []
+    
+    for u, i, r in validation_set:
+        neighbors = top_k_neighbors_sim.get(i, [])
+        pred = predict_pearson(u, i, neighbors, item_means)
+        predictions_sim_case2.append(pred)
+        
+    predictions_sim_case2 = np.array(predictions_sim_case2)
+    
+    predictions_ds_case2 = []
+    
+    for u, i, r in validation_set:
+        neighbors = top_k_neighbors_ds.get(i, [])
+        pred = predict_pearson(u, i, neighbors, item_means)
+        predictions_ds_case2.append(pred)
+        
+    predictions_ds_case2 = np.array(predictions_ds_case2)
+    
+    # Save Case 2 Similarity Comparison (Same neighbors, just new file for consistency)
+    c2_sim_path = os.path.join(project_root, 'results', 'case2_similarity_comparison.txt')
+    with open(c2_sim_path, 'w') as f_sim:
+         # logic identical to Step 7 table generation
+         for target_item in target_items:
+            if target_item not in top_k_neighbors_sim: continue
+            
+            # Using same top_k lists as Case 1 (Step 5 selection logic is same)
+            header = f"Target {target_item}: Comparison of Top 20 Neighbors (Case 2)"
+            col_headers = f"{'Rank':<5} | {'Sim-Item':<10} | {'Sim-Score':<10} | {'DS-Item':<10} | {'DS-Score':<10}"
+            separator = "-" * 60
+            
+            f_sim.write(header + "\n")
+            f_sim.write(col_headers + "\n")
+            f_sim.write(separator + "\n")
+            
+            top_sim = top_k_neighbors_sim.get(target_item, [])[:20]
+            top_ds = top_k_neighbors_ds.get(target_item, [])[:20]
+            max_len = max(len(top_sim), len(top_ds))
+            
+            for i in range(max_len):
+                rank = i + 1
+                if i < len(top_sim):
+                    item_s, score_s = top_sim[i]
+                    s_str = f"{item_s:<10} | {score_s:<10.4f}"
+                else: s_str = f"{'-':<10} | {'-':<10}"
+                    
+                if i < len(top_ds):
+                    item_d, score_d = top_ds[i]
+                    d_str = f"{item_d:<10} | {score_d:<10.4f}"
+                else: d_str = f"{'-':<10} | {'-':<10}"
+                
+                f_sim.write(f"{rank:<5} | {s_str} | {d_str}\n")
+            f_sim.write("\n\n")
+    print(f"Case 2 Similarity comparison saved to: {c2_sim_path}")
+
+    # Save Case 2 Prediction Comparison
+    c2_pred_path = os.path.join(project_root, 'results', 'case2_prediction_comparison.txt')
+    with open(c2_pred_path, 'w') as f_pred:
+        header = "Comparison of Predictions (Case 2 Pearson):"
+        cols = f"{'User':<15} | {'Item':<12} | {'Sim-Pred':<8} | {'DS-Pred':<8}"
+        sep = "-" * 55
+        
+        f_pred.write(header + "\n")
+        f_pred.write(cols + "\n")
+        f_pred.write(sep + "\n")
+        print("\n" + header)
+        print(cols)
+        print(sep)
+        
+        # Using actuals is irrelevant as they are NaNs, just show preds
+        for k in range(min(20, len(predictions_sim_case2))):
+            u, i, _ = validation_set[k]
+            p_s = predictions_sim_case2[k]
+            p_d = predictions_ds_case2[k]
+            
+            row = f"{u:<15} | {i:<12} | {p_s:<8.2f} | {p_d:<8.2f}"
+            f_pred.write(row + "\n")
+            print(row)
+            
+    print(f"Case 2 Prediction comparison saved to: {c2_pred_path}")
 
 if __name__ == "__main__":
     main()
