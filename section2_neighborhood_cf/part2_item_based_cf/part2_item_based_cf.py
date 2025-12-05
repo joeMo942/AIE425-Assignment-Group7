@@ -13,6 +13,7 @@ if project_root not in sys.path:
 
 from utils import data_loader
 from utils import similarity
+from utils import prediction
 
 def main():
     print("="*80)
@@ -146,61 +147,12 @@ def main():
     predictions_sim = []
     
     
-    def predict_mean_centered(user_id, item_id, neighbors_list, item_means_dict):
-        # neighbors_list is list of (item, sim)
-        if not neighbors_list:
-            return item_means_dict.get(item_id, 3.0)
-        
-        numerator = 0.0
-        denominator = 0.0
-        
-        user_ratings = user_item_ratings.get(user_id, {})
-        
-        if not user_ratings:
-            return item_means_dict.get(item_id, 3.0)
-            
-        user_mean = sum(user_ratings.values()) / len(user_ratings)
-        
-        for neighbor, sim in neighbors_list:
-            if neighbor in user_ratings:
-                rating = user_ratings[neighbor]
-                numerator += sim * (rating - user_mean)
-                denominator += sim
-                
-        if denominator == 0:
-            return item_means_dict.get(item_id, 3.0)
-            
-        return user_mean + (numerator / denominator)
-
-    def predict_pearson(user_id, item_id, neighbors_list, item_means_dict):
-        if not neighbors_list:
-            return item_means_dict.get(item_id, 3.0)
-            
-        user_ratings = user_item_ratings.get(user_id, {})
-        if not user_ratings:
-            return item_means_dict.get(item_id, 3.0)
-            
-        numerator = 0.0
-        denominator = 0.0
-        
-        target_item_mean = item_means_dict.get(item_id, 3.0)
-        
-        for neighbor, sim in neighbors_list:
-            if neighbor in user_ratings:
-                rating = user_ratings[neighbor]
-                neighbor_mean = item_means_dict.get(neighbor, 3.0)
-                numerator += sim * (rating - neighbor_mean)
-                denominator += sim
-                
-        if denominator == 0:
-            return target_item_mean
-            
-        return target_item_mean + (numerator / denominator)
+    # Perform predictions for Step 3
 
     # Perform predictions for Step 3
     for u, i, r in validation_set:
         neighbors = top_k_neighbors_sim.get(i, [])
-        pred = predict_mean_centered(u, i, neighbors, item_means)
+        pred = prediction.predict_mean_centered(u, i, neighbors, item_means, user_item_ratings)
         predictions_sim.append(pred)
         
     predictions_sim = np.array(predictions_sim)
@@ -277,7 +229,7 @@ def main():
     
     for u, i, r in validation_set:
         neighbors = top_k_neighbors_ds.get(i, [])
-        pred = predict_mean_centered(u, i, neighbors, item_means)
+        pred = prediction.predict_mean_centered(u, i, neighbors, item_means, user_item_ratings)
         predictions_ds.append(pred)
         
     predictions_ds = np.array(predictions_ds)
@@ -386,7 +338,7 @@ def main():
     
     for u, i, r in validation_set:
         neighbors = top_k_neighbors_sim.get(i, [])
-        pred = predict_pearson(u, i, neighbors, item_means)
+        pred = prediction.predict_pearson(u, i, neighbors, item_means, user_item_ratings)
         predictions_sim_case2.append(pred)
         
     predictions_sim_case2 = np.array(predictions_sim_case2)
@@ -395,7 +347,7 @@ def main():
     
     for u, i, r in validation_set:
         neighbors = top_k_neighbors_ds.get(i, [])
-        pred = predict_pearson(u, i, neighbors, item_means)
+        pred = prediction.predict_pearson(u, i, neighbors, item_means, user_item_ratings)
         predictions_ds_case2.append(pred)
         
     predictions_ds_case2 = np.array(predictions_ds_case2)
