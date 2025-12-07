@@ -93,3 +93,28 @@ Clustering-Based Collaborative Filtering is a viable heuristic to accelerate rec
 1.  **Handle Imbalance**: Implementing a secondary clustering step or sub-clustering for the largest groups ("Generous" users) could further improve efficiency.
 2.  **Hybrid Approach**: For users in very small clusters, fallback to the global baseline or a broader cluster merge to ensure enough neighbors are found.
 3.  **Feature Expansion**: Clustering solely on 'Average Rating' is unidimensional. Adding 'Variance of Ratings' or 'Number of Ratings' to the feature vector could create more meaningful user segments.
+
+## 7. Extended Discussion
+
+### 14.1 Effectiveness of clustering based on average user ratings
+Clustering users based on their average ratings acts as a rudimentary "bias grouping." It effectively segregates "lenient" raters (who give mostly 4s and 5s) from "critical" raters (who give 1s and 2s).
+- **Signal Preservation**: Since the prediction formula uses mean-centering ($r - \bar{r}_u$), finding neighbors with similar means is mathematically somewhat redundant but practically useful. It ensures that the "neighborhood" has a similar baseline, reducing variance.
+- ** Limitation**: It is a 1-dimensional feature space. Users with the same average (e.g., 3.0) could be completely different: one rates everything 3, the other rates half 1s and half 5s. This method fails to distinguish these behavioral differences.
+
+### 14.2 Trade-off between prediction accuracy and computational efficiency
+- **Efficiency**: The gains are massive and linear with K (roughly). With K=10, we theoretically search only ~10% of the space (assuming balanced clusters). Our results confirm an **86.79%** reduction in computations.
+- **Accuracy**: There is a minor degradation. Restricting the search space means we might miss the *global* optimal neighbor who happens to have a different average rating but perfect correlation on specific items. However, the observed difference (MSE increase or prediction delta) is negligible for most users, making this a highly favorable trade-off for real-time systems.
+
+### 14.3 Suitability for Dataset Characteristics
+Based on the terminal results showing an **Imbalance Ratio of ~10.9**, this simple K-Means strategy is **sub-optimal** for this specific dataset.
+- **Why?** The dataset likely follows a normal distribution or power law of average ratings, meaning most users are "average" (Cluster ~3.5-4.0) and few are extreme.
+- **Consequence**: K-Means forces boundaries that result in one massive "Average" cluster containing ~25% of all users, and tiny "Extreme" clusters. This defeats the purpose of clustering for the "Average" users, as their search space remains huge, while "Extreme" users might face sparsity.
+
+### 14.4 Effect of Choice of K on Accuracy and Efficiency
+- **Low K (e.g., 5-10)**:
+    - **Efficiency**: Lower. Large clusters remain, limiting speedup.
+    - **Accuracy**: Higher. Search space is broader, closer to global search.
+- **High K (e.g., 50-100)**:
+    - **Efficiency**: Higher. Clusters are smaller, search is very fast.
+    - **Accuracy**: Risk of dropping. If K is too high, clusters become too fragmented. A user might be trapped in a small bucket and miss valuable neighbors just across the stochastic boundary.
+- **Optimal K**: The "Elbow Method" typically suggests a point (e.g., K=6 or K=10) where variance is explained, but for *retrieval efficiency*, a higher K (like 50) is often preferred to force smaller partition sizes, provided the imbalance isn't severe.
