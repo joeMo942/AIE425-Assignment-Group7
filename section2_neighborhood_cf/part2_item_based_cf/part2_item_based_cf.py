@@ -42,10 +42,6 @@ def main():
     print("\n--- Building Lookup Dictionaries ---")
     item_user_ratings = defaultdict(dict)
     user_item_ratings = defaultdict(dict)
-    
-    # We also need item means for prediction fallback
-    item_sums = defaultdict(float)
-    item_counts = defaultdict(int)
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Indexing"):
         user = row['user']
@@ -55,18 +51,18 @@ def main():
         item_user_ratings[item][user] = rating
         user_item_ratings[user][item] = rating
         
-        item_sums[item] += rating
-        item_counts[item] += 1
-        
-    item_means = {k: v / item_counts[k] for k, v in item_sums.items()}
     all_items = list(item_user_ratings.keys())
     print(f"  {'Total items in dataset:':<40} {len(all_items):>15,}")
     
-    # Compute user means for Adjusted Cosine similarity
-    # Load user means from pre-computed file using data_loader
-    print("\n--- Loading User Means ---")
+    # Load pre-computed means from utils/data_loader
+    print("\n--- Loading Pre-computed Means ---")
     user_avg_df = data_loader.get_user_avg_ratings()
     user_means = dict(zip(user_avg_df['user'], user_avg_df['r_u_bar']))
+    print(f"  [DONE] Loaded user means for {len(user_means):,} users")
+    
+    item_avg_df = data_loader.get_item_avg_ratings()
+    item_means = dict(zip(item_avg_df['item'], item_avg_df['r_i_bar']))
+    print(f"  [DONE] Loaded item means for {len(item_means):,} items")
 
     # -------------------------------------------------------------------------
     # CASE STUDY 1: Cosine Similarity with Mean-Centering (Adjusted Cosine)
