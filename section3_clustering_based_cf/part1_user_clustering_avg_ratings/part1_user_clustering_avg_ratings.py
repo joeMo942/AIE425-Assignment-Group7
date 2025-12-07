@@ -168,10 +168,10 @@ def main():
     print(info_df.to_string(index=False))
 
     # =========================================================
-    # Part 2: Clustering-Based Collaborative Filtering (K=50)
+    # Part 2: Clustering-Based Collaborative Filtering (K=10)
     # =========================================================
     print("\n" + "="*50)
-    print("Starting Clustering-Based CF (using Optimal K=50)")
+    print("Starting Clustering-Based CF (using Optimal K=10)")
     print("="*50)
 
     # 1. Load Data
@@ -185,7 +185,7 @@ def main():
     user_means = df.set_index('user')['r_u_bar'].to_dict()
     
     # 2. Assign Users to Clusters
-    # We already have 'cluster' column in `df` from the best_kmeans (K=50)
+    # We already have 'cluster' column in `df` from the best_kmeans (K=10)
     user_cluster_map = df.set_index('user')['cluster'].to_dict()
     
     # Group users by cluster for fast retrieval
