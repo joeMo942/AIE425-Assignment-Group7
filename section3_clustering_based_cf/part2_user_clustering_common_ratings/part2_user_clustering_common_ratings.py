@@ -1,9 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import silhouette_score
 from scipy import sparse
 import sys
 import os
@@ -13,6 +10,7 @@ import time
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(project_root)
 
+from utils.clustering import KMeans, StandardScaler, silhouette_score
 from utils.data_loader import get_preprocessed_dataset, get_target_users, get_target_items, get_user_avg_ratings
 from utils.similarity import calculate_user_mean_centered_cosine
 from utils.prediction import predict_user_based

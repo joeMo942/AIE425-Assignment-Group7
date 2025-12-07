@@ -1,27 +1,15 @@
-"""
-Part 4: K-means Clustering for Cold-Start Problem
-=================================================
-
-This module implements clustering-based approaches to handle the cold-start problem:
-- Cold-start users: New users with limited rating history
-- Cold-start items: New items with limited ratings
-
-Uses user clusters from Part 1 and item clusters from Part 3.
-"""
-
 import os
 import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error
 import warnings
 warnings.filterwarnings('ignore')
 
 # Add project root to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from utils.clustering import KMeans, StandardScaler, mean_absolute_error, mean_squared_error
 from utils import data_loader
 from utils.similarity import calculate_user_mean_centered_cosine, calculate_item_mean_centered_cosine
 from utils.prediction import predict_user_based, predict_item_based

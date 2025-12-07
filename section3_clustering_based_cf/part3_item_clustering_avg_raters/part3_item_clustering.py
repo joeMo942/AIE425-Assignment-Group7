@@ -5,12 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import StandardScaler
 
 # Add project root to path to import utils
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from utils.clustering import KMeans, StandardScaler, silhouette_score
 from utils import data_loader
 from utils.similarity import calculate_item_mean_centered_cosine
 from utils.prediction import predict_item_based
