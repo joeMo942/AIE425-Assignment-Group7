@@ -51,6 +51,7 @@ We applied User-Based CF within each cluster using **Mean-Centered Cosine Simila
 #### Accuracy & Significance Weighting
 - **Core Users (Cluster 3)**: User 27768 found neighbors with an average overlap of **~40 items**. This indicates extremely high confidence (Significance Weighting is high). The predictions are robust.
 - **Sparse Users (Cluster 0)**: User 134471 found neighbors with an average overlap of **~1 item**. This is a **Cold Start / Sparse** problem. The predictions are likely less reliable despite the clustering.
+- **Handling Strategy**: Switch to **Item-Based CF, **Matrix Factorization, or **Hybrid Content-Based* methods. These are more robust to user-level sparsity than User-Based CF.
 - **Comparison with Part 1**: Part 2 predictions for the Sparse user (134471) were closer to the global baseline (calculated in Part 1 logs) than Part 1's predictions were. This suggests Part 2 might be safer for sparse users by keeping them in a large "General" pool rather than forcing them into artificial "Strict/Generous" groups.
 
 #### Computational Efficiency
