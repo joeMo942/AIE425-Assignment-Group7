@@ -79,6 +79,15 @@ def prepare_item_clusters(item_avg_df, df, optimal_k=10):
     return feature_df, kmeans, scaler, feature_cols
 
 
+# ==============================================================================
+# TASK 1: Simulate cold-start scenarios
+#   1.1. From your dataset, randomly select 100 users with more than 50 ratings each.
+#   1.2. For each selected user, hide 80% of their ratings to simulate a cold-start user
+#        with only 10-20 ratings.
+#   1.3. Store the hidden ratings as ground truth for evaluation.
+#   1.4. Similarly, select 50 items with many ratings and hide most ratings to simulate
+#        cold-start items.
+# ==============================================================================
 def simulate_cold_start_users(df, user_avg_df, n_users=100, min_ratings=50, hide_fraction=0.80):
     """
     Task 1.1-1.3: Simulate cold-start users by hiding ratings.
@@ -88,9 +97,9 @@ def simulate_cold_start_users(df, user_avg_df, n_users=100, min_ratings=50, hide
         visible_ratings: Dict {user_id: {item_id: rating}} with only 10-20 ratings visible
         hidden_ratings: Dict {user_id: {item_id: rating}} ground truth ratings
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 1: SIMULATING COLD-START SCENARIOS")
-    print("="*60)
+    print("="*80)
     
     # Count ratings per user
     user_rating_counts = df.groupby('user').size()
@@ -119,9 +128,10 @@ def simulate_cold_start_users(df, user_avg_df, n_users=100, min_ratings=50, hide
         visible_ratings[user_id] = {item: all_ratings[item] for item in visible_items}
         hidden_ratings[user_id] = {item: all_ratings[item] for item in hidden_items}
     
-    print(f"Selected {len(selected_users)} cold-start users")
-    print(f"Average visible ratings: {np.mean([len(v) for v in visible_ratings.values()]):.1f}")
-    print(f"Average hidden ratings: {np.mean([len(v) for v in hidden_ratings.values()]):.1f}")
+    print("\n--- 1.1-1.3 Cold-Start Users ---")
+    print(f"  {'Selected Users:':<40} {len(selected_users):>15}")
+    print(f"  {'Avg Visible Ratings:':<40} {np.mean([len(v) for v in visible_ratings.values()]):>15.1f}")
+    print(f"  {'Avg Hidden Ratings:':<40} {np.mean([len(v) for v in hidden_ratings.values()]):>15.1f}")
     
     return list(selected_users), visible_ratings, hidden_ratings
 
@@ -161,13 +171,25 @@ def simulate_cold_start_items(df, item_avg_df, n_items=50, min_ratings=20, hide_
         visible_item_ratings[item_id] = {user: all_ratings[user] for user in visible_users}
         hidden_item_ratings[item_id] = {user: all_ratings[user] for user in hidden_users}
     
-    print(f"Selected {len(selected_items)} cold-start items")
-    print(f"Average visible ratings: {np.mean([len(v) for v in visible_item_ratings.values()]):.1f}")
-    print(f"Average hidden ratings: {np.mean([len(v) for v in hidden_item_ratings.values()]):.1f}")    
+    print("\n--- 1.4 Cold-Start Items ---")
+    print(f"  {'Selected Items:':<40} {len(selected_items):>15}")
+    print(f"  {'Avg Visible Ratings:':<40} {np.mean([len(v) for v in visible_item_ratings.values()]):>15.1f}")
+    print(f"  {'Avg Hidden Ratings:':<40} {np.mean([len(v) for v in hidden_item_ratings.values()]):>15.1f}")    
     
     return list(selected_items), visible_item_ratings, hidden_item_ratings
 
 
+# ==============================================================================
+# TASK 2: Develop a cold-start user assignment strategy
+#   2.1. For each cold-start user, calculate their limited profile features (e.g., average
+#        rating from their few ratings).
+#   2.2. Compute the distance between the cold-start user's feature vector and each
+#        cluster centroid from Part 1 (K-means user clusters).
+#   2.3. Assign the cold-start user to the nearest cluster.
+#   2.4. Record the confidence of the assignment (e.g., distance to nearest centroid vs.
+#        distance to second-nearest centroid).
+#        Confidence = (d_second - d_nearest) / d_second
+# ==============================================================================
 def assign_cold_start_user_to_cluster(visible_ratings, kmeans, scaler, centroids):
     """
     Task 2: Assign cold-start user to nearest cluster.
@@ -205,6 +227,14 @@ def assign_cold_start_user_to_cluster(visible_ratings, kmeans, scaler, centroids
     return assigned_cluster, d_nearest, d_second, confidence
 
 
+# ==============================================================================
+# TASK 3: Generate recommendations for cold-start users
+#   3.1. Within the assigned cluster, find the most similar users based on the limited
+#        rating overlap.
+#   3.2. Use these similar users to predict ratings for items the cold-start user hasn't
+#        rated.
+#   3.3. Generate top-10 item recommendations for each cold-start user.
+# ==============================================================================
 def generate_recommendations_for_cold_start_user(
     user_id, visible_ratings, assigned_cluster, cluster_users_map,
     user_item_ratings, user_means, top_n=10
@@ -264,6 +294,15 @@ def generate_recommendations_for_cold_start_user(
     return top_recommendations, predictions
 
 
+# ==============================================================================
+# TASK 4: Evaluate cold-start user recommendations
+#   4.1. Compare the predicted ratings with the hidden ground truth ratings.
+#   4.2. Calculate the Mean Absolute Error (MAE) and Root Mean Squared Error (RMSE).
+#   4.3. Compute precision@10 and recall@10 for the top-10 recommendations.
+#        Precision@10 = (number of relevant items in top 10) / 10
+#        Recall@10 = (number of relevant items in top 10) / (total number of relevant items)
+#   4.4. Compare the accuracy with and without clustering for cold-start users.
+# ==============================================================================
 def evaluate_cold_start_user_recommendations(
     cold_start_users, visible_ratings, hidden_ratings,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -272,9 +311,9 @@ def evaluate_cold_start_user_recommendations(
     """
     Tasks 2, 3, 4: Assign users to clusters, generate recommendations, evaluate.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASKS 2-4: COLD-START USER ASSIGNMENT & RECOMMENDATIONS")
-    print("="*60)
+    print("="*80)
     
     all_predictions = []
     all_actuals = []
@@ -342,11 +381,11 @@ def evaluate_cold_start_user_recommendations(
     avg_precision = np.mean([r['precision@10'] for r in recommendation_results])
     avg_recall = np.mean([r['recall@10'] for r in recommendation_results])
     
-    print(f"\nClustering-Based Cold-Start User Results:")
-    print(f"  MAE: {mae:.4f}")
-    print(f"  RMSE: {rmse:.4f}")
-    print(f"  Avg Precision@10: {avg_precision:.4f}")
-    print(f"  Avg Recall@10: {avg_recall:.4f}")
+    print("\n--- Results ---")
+    print(f"  {'MAE:':<40} {mae:>15.4f}")
+    print(f"  {'RMSE:':<40} {rmse:>15.4f}")
+    print(f"  {'Avg Precision@10:':<40} {avg_precision:>15.4f}")
+    print(f"  {'Avg Recall@10:':<40} {avg_recall:>15.4f}")
     
     return {
         'mae': mae,
@@ -358,6 +397,7 @@ def evaluate_cold_start_user_recommendations(
     }
 
 
+# Task 4.4: Baseline (no clustering) comparison for cold-start users
 def evaluate_baseline_cold_start_user(
     cold_start_users, visible_ratings, hidden_ratings,
     user_item_ratings, user_means
@@ -366,9 +406,7 @@ def evaluate_baseline_cold_start_user(
     Task 4.4: Baseline (no clustering) for cold-start users.
     Uses global neighbor search instead of cluster-based.
     """
-    print("\n" + "-"*50)
-    print("BASELINE (NO CLUSTERING) FOR COLD-START USERS")
-    print("-"*50)
+    print("\n--- Baseline Comparison (No Clustering) ---")
     
     all_predictions = []
     all_actuals = []
@@ -410,12 +448,24 @@ def evaluate_baseline_cold_start_user(
     else:
         mae, rmse = 0, 0
     
-    print(f"  Baseline MAE: {mae:.4f}")
-    print(f"  Baseline RMSE: {rmse:.4f}")
+    print(f"  {'Baseline MAE:':<40} {mae:>15.4f}")
+    print(f"  {'Baseline RMSE:':<40} {rmse:>15.4f}")
     
     return {'mae': mae, 'rmse': rmse}
 
 
+# ==============================================================================
+# TASK 5: Develop a cold-start item assignment strategy
+#   5.1. For each cold-start item, calculate its limited profile (e.g., average rating,
+#        number of raters).
+#   5.2. Assign the item to the nearest item cluster from Part 3.
+#   5.3. Calculate the confidence of each cold-start item assignment using:
+#        5.3.1. Compute Euclidean distance to assigned (nearest) cluster centroid: d_nearest
+#        5.3.2. Compute Euclidean distance to second-nearest cluster centroid: d_second
+#        5.3.3. Confidence = (d_second - d_nearest) / d_second
+#        5.3.4. Present results in a table showing: item ID, assigned cluster, d_nearest,
+#               d_second, and confidence score.
+# ==============================================================================
 def assign_cold_start_item_to_cluster(visible_item_ratings, item_avg, kmeans, scaler, feature_cols):
     """
     Task 5: Assign cold-start item to nearest cluster.
@@ -445,6 +495,15 @@ def assign_cold_start_item_to_cluster(visible_item_ratings, item_avg, kmeans, sc
     return assigned_cluster, d_nearest, d_second, confidence
 
 
+# ==============================================================================
+# TASKS 6-7: Generate and evaluate cold-start item predictions
+#   6.1. For users who might be interested in the cold-start item, predict their ratings.
+#   6.2. Use similar items within the same cluster to make predictions.
+#   6.3. Identify which users would most likely rate the cold-start item highly.
+#   7.1. Compare predicted ratings with hidden ground truth.
+#   7.2. Calculate MAE and RMSE for cold-start item predictions.
+#   7.3. Compare accuracy with and without clustering.
+# ==============================================================================
 def evaluate_cold_start_items(
     cold_start_items, visible_item_ratings, hidden_item_ratings,
     item_cluster_df, cluster_items_map, user_item_ratings, user_means, item_means,
@@ -453,9 +512,9 @@ def evaluate_cold_start_items(
     """
     Tasks 5-7: Assign items to clusters, generate predictions, evaluate.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASKS 5-7: COLD-START ITEM ASSIGNMENT & PREDICTIONS")
-    print("="*60)
+    print("="*80)
     
     all_predictions = []
     all_actuals = []
@@ -517,16 +576,16 @@ def evaluate_cold_start_items(
     else:
         mae, rmse = 0, 0
     
-    print(f"\nClustering-Based Cold-Start Item Results:")
-    print(f"  MAE: {mae:.4f}")
-    print(f"  RMSE: {rmse:.4f}")
+    print("\n--- Results ---")
+    print(f"  {'MAE:':<40} {mae:>15.4f}")
+    print(f"  {'RMSE:':<40} {rmse:>15.4f}")
     
     # Task 5.3.4: Print assignment table
-    print("\nItem Cluster Assignments (sample):")
-    print(f"{'Item ID':<10} | {'Cluster':<8} | {'d_nearest':<10} | {'d_second':<10} | {'Confidence':<10}")
-    print("-" * 55)
+    print("\n--- Item Cluster Assignments (sample) ---")
+    print(f"  {'Item ID':<10} | {'Cluster':<8} | {'d_nearest':<10} | {'d_second':<10} | {'Confidence':<10}")
+    print("  " + "-" * 60)
     for res in assignment_results[:10]:
-        print(f"{res['item_id']:<10} | {res['assigned_cluster']:<8} | {res['d_nearest']:<10.4f} | {res['d_second']:<10.4f} | {res['confidence']:<10.4f}")
+        print(f"  {res['item_id']:<10} | {res['assigned_cluster']:<8} | {res['d_nearest']:<10.4f} | {res['d_second']:<10.4f} | {res['confidence']:<10.4f}")
     
     return {
         'mae': mae,
@@ -535,6 +594,12 @@ def evaluate_cold_start_items(
     }
 
 
+# ==============================================================================
+# TASK 8: Analyze the relationship between number of ratings and prediction accuracy
+#   8.1. For cold-start users with 5, 10, 15, and 20 ratings, measure prediction accuracy.
+#   8.2. Plot a curve showing how accuracy improves as the number of ratings increases.
+#   8.3. At what point does a user transition from 'cold-start' to having sufficient data?
+# ==============================================================================
 def analyze_rating_count_vs_accuracy(
     cold_start_users, visible_ratings, hidden_ratings, df,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -543,9 +608,9 @@ def analyze_rating_count_vs_accuracy(
     """
     Task 8: Analyze relationship between number of ratings and prediction accuracy.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 8: RATING COUNT VS PREDICTION ACCURACY")
-    print("="*60)
+    print("="*80)
     
     rating_counts = [5, 10, 15, 20]
     results = []
@@ -583,7 +648,7 @@ def analyze_rating_count_vs_accuracy(
         
         avg_mae = np.mean(mae_list) if mae_list else 0
         results.append({'n_ratings': n_ratings, 'mae': avg_mae})
-        print(f"  {n_ratings} ratings: MAE = {avg_mae:.4f}")
+        print(f"  {n_ratings:>2} ratings: MAE = {avg_mae:.4f}")
     
     # Task 8.2: Plot accuracy curve
     plt.figure(figsize=(8, 5))
@@ -594,21 +659,29 @@ def analyze_rating_count_vs_accuracy(
     plt.grid(True)
     plot_path = os.path.join(RESULTS_DIR, 'sec3_part4_rating_count_accuracy.png')
     plt.savefig(plot_path)
-    print(f"\nPlot saved to {plot_path}")
+    print(f"\n  [PLOT] sec3_part4_rating_count_accuracy.png")
     
     # Task 8.3: Identify transition point
     if len(results) >= 2:
         maes = [r['mae'] for r in results]
         improvement = [(maes[i-1] - maes[i]) / maes[i-1] * 100 if maes[i-1] > 0 else 0 
                       for i in range(1, len(maes))]
-        print(f"\nImprovement rates: {improvement}")
+        print(f"\n--- Transition Analysis ---")
         transition_idx = np.argmax([abs(imp) for imp in improvement]) + 1
         transition_point = results[transition_idx]['n_ratings']
-        print(f"Suggested transition from 'cold-start' at ~{transition_point} ratings")
+        print(f"  {'Improvement rates:':<40} {[f'{x:.1f}%' for x in improvement]}")
+        print(f"  {'Transition point:':<40} ~{transition_point} ratings")
     
     return results
 
 
+# ==============================================================================
+# TASK 12: Compare different cold-start strategies
+#   12.1. Strategy 1: Assign to nearest cluster and use cluster-based CF.
+#   12.2. Strategy 2: Use global (non-clustered) CF with available ratings.
+#   12.3. Strategy 3: Use popularity-based recommendations.
+#   12.4. Compare the accuracy and efficiency of each strategy.
+# ==============================================================================
 def compare_cold_start_strategies(
     cold_start_users, visible_ratings, hidden_ratings,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -617,9 +690,9 @@ def compare_cold_start_strategies(
     """
     Task 12: Compare different cold-start strategies.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 12: COMPARING COLD-START STRATEGIES")
-    print("="*60)
+    print("="*80)
     
     sample_users = cold_start_users[:20]
     
@@ -717,6 +790,13 @@ def compare_cold_start_strategies(
     return strategy_results
 
 
+# ==============================================================================
+# TASK 13: Analyze the impact of cluster granularity on cold-start performance
+#   13.1. Test cold-start performance with different K values (K = 5, 10, 20, 50).
+#   13.2. Does a smaller K (fewer, larger #clusters) or larger K (more, smaller
+#         #clusters) work better for cold-start?
+#   13.3. Discuss the trade-off between cluster specificity and data availability.
+# ==============================================================================
 def analyze_cluster_granularity(
     cold_start_users, visible_ratings, hidden_ratings,
     user_avg_df, user_item_ratings, user_means
@@ -724,9 +804,9 @@ def analyze_cluster_granularity(
     """
     Task 13: Analyze impact of cluster granularity (different K values).
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 13: CLUSTER GRANULARITY ANALYSIS")
-    print("="*60)
+    print("="*80)
     
     k_values = [5, 10, 20, 50]
     results = []
@@ -781,13 +861,24 @@ def analyze_cluster_granularity(
     return results
 
 
+# ==============================================================================
+# TASK 11: Analyze cluster assignment confidence
+#   11.1. For cold-start users/items, calculate the confidence of cluster assignments:
+#         Ratio = d_nearest / d_second
+#         - Lower ratios (<0.5) indicate confident assignments
+#         - Higher ratios (>0.7) indicate ambiguous assignments
+#   11.2. Identify cases where cluster assignment is ambiguous (similar distances to
+#         multiple clusters).
+#   11.3. Propose strategies for handling ambiguous cases (e.g., multi-cluster
+#         membership, weighted recommendations).
+# ==============================================================================
 def analyze_cluster_assignment_confidence(assignment_results):
     """
     Task 11: Analyze cluster assignment confidence.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 11: CLUSTER ASSIGNMENT CONFIDENCE ANALYSIS")
-    print("="*60)
+    print("="*80)
     
     df_results = pd.DataFrame(assignment_results)
     
@@ -820,6 +911,15 @@ def analyze_cluster_assignment_confidence(assignment_results):
     return df_results
 
 
+# ==============================================================================
+# TASK 14: Develop a confidence-based recommendation strategy
+#   14.1. For each cold-start recommendation, compute a confidence score based on:
+#         a. Cluster assignment confidence
+#         b. Number of similar users/items found
+#         c. Agreement among similar users/items
+#   14.2. Use confidence scores to filter out low-confidence recommendations.
+#   14.3. Evaluate whether filtering improves overall recommendation quality.
+# ==============================================================================
 def confidence_based_recommendations(
     cold_start_users, visible_ratings, hidden_ratings,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -828,9 +928,9 @@ def confidence_based_recommendations(
     """
     Task 14: Develop confidence-based recommendation strategy.
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 14: CONFIDENCE-BASED RECOMMENDATION STRATEGY")
-    print("="*60)
+    print("="*80)
     
     high_conf_results = []
     low_conf_results = []
@@ -899,6 +999,7 @@ def confidence_based_recommendations(
     return results
 
 
+# Task 7.3: Baseline (no clustering) comparison for cold-start items
 def evaluate_baseline_cold_start_items(
     cold_start_items, visible_item_ratings, hidden_item_ratings,
     user_item_ratings, user_means, item_means, df
@@ -959,6 +1060,13 @@ def evaluate_baseline_cold_start_items(
     return {'mae': mae, 'rmse': rmse}
 
 
+# ==============================================================================
+# TASK 9: Develop a hybrid cold-start strategy
+#   9.1. Combine clustering-based CF with content-based features (if available).
+#   9.2. Use demographic information or item attributes to improve cold-start cluster
+#        assignment.
+#   9.3. Evaluate whether the hybrid approach improves prediction accuracy.
+# ==============================================================================
 def develop_hybrid_cold_start_strategy(
     cold_start_users, visible_ratings, hidden_ratings,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -968,9 +1076,9 @@ def develop_hybrid_cold_start_strategy(
     Task 9: Develop a hybrid cold-start strategy.
     Combines clustering-based CF with content-based features (item popularity/genre proxy).
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 9: HYBRID COLD-START STRATEGY")
-    print("="*60)
+    print("="*80)
     
     # Calculate item popularity as a content-based proxy
     item_popularity = df.groupby('item').agg({
@@ -1069,6 +1177,13 @@ def develop_hybrid_cold_start_strategy(
     }
 
 
+# ==============================================================================
+# TASK 10: Test the robustness of cold-start handling
+#   10.1. Vary the amount of information available for cold-start users (e.g., 3, 5, 10, 20
+#         ratings).
+#   10.2. Measure how prediction quality degrades as less information is available.
+#   10.3. Identify the minimum number of ratings needed for acceptable prediction quality.
+# ==============================================================================
 def test_cold_start_robustness(
     cold_start_users, df, user_cluster_df, cluster_users_map,
     user_item_ratings, user_means, kmeans, scaler, centroids
@@ -1077,9 +1192,9 @@ def test_cold_start_robustness(
     Task 10: Test the robustness of cold-start handling.
     Varies the amount of information available (3, 5, 10, 20 ratings).
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 10: COLD-START ROBUSTNESS TESTING")
-    print("="*60)
+    print("="*80)
     
     rating_counts = [3, 5, 10, 20]  # As specified in the assignment
     results = []
@@ -1175,6 +1290,7 @@ def test_cold_start_robustness(
     }
 
 
+# Task 14 Enhanced: Adding all 3 confidence factors including agreement
 def confidence_based_recommendations_enhanced(
     cold_start_users, visible_ratings, hidden_ratings,
     user_cluster_df, cluster_users_map, user_item_ratings, user_means,
@@ -1187,9 +1303,9 @@ def confidence_based_recommendations_enhanced(
       b. Number of similar users/items found
       c. Agreement among similar users/items (NEW)
     """
-    print("\n" + "="*60)
+    print("\n" + "="*80)
     print("TASK 14 (ENHANCED): CONFIDENCE-BASED RECOMMENDATIONS")
-    print("="*60)
+    print("="*80)
     
     high_conf_results = []
     low_conf_results = []
@@ -1316,6 +1432,13 @@ def confidence_based_recommendations_enhanced(
     return results
 
 
+# ==============================================================================
+# TASK 15: Create a comprehensive summary
+#   15.1. Summarize the effectiveness of clustering for handling cold-start.
+#   15.2. Report on which strategies work best for different types of cold-start.
+#   15.3. Provide recommendations for minimum data requirements before reliable
+#         recommendations can be made.
+# ==============================================================================
 def main():
     print("="*70)
     print("PART 4: K-MEANS CLUSTERING FOR COLD-START PROBLEM")
@@ -1475,9 +1598,9 @@ def main():
     # ===========================================
     # Task 15: Summary and Insights
     # ===========================================
-    print("\n" + "="*70)
+    print("\n" + "="*80)
     print("TASK 15: SUMMARY AND INSIGHTS")
-    print("="*70)
+    print("="*80)
     # delete ba3d ma t5ls elreport ya nourrrrrrrrrrr
     summary = f"""
     15.1 EFFECTIVENESS OF CLUSTERING FOR COLD-START:
@@ -1691,8 +1814,10 @@ def main():
         f.write("="*70 + "\n")
         f.write(summary)
     
-    print(f"\nResults saved to {summary_path}")
-    print("\nAnalysis completed successfully!")
+    print(f"\n  [SAVED] {os.path.basename(summary_path)}")
+    print("\n" + "="*80)
+    print("[DONE] Part 4: Cold-Start Clustering completed successfully.")
+    print("="*80)
 
 
 if __name__ == "__main__":
